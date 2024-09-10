@@ -10,12 +10,11 @@ import re
 co0 = "#ffffff" #trang
 co1 = "#000000"  #den
 co2 = "#4456F0"  #xanh
-co3 = "#ff69b4"   #hotpink
 co4 = "#6495ED"   #hongnhat
 co5 = "#dda0dd"
 
 
-class HILL_CLIMBING:
+class GTS:
     def __init__(self,GUI):
         self.GUI = GUI
         self.fig, self.ax = plt.subplots(figsize=(6, 4.43))
@@ -93,7 +92,7 @@ class HILL_CLIMBING:
         
 
     def contruction(self):
-        self.GUI.title ("HILL CLIMBING")
+        self.GUI.title ("GTS")
         self.GUI.geometry('960x520+300+150')
         self.GUI.configure(background=co0)
         self.GUI.resizable(width=tk.FALSE, height=tk.FALSE)
@@ -111,7 +110,7 @@ class HILL_CLIMBING:
         self.GUI.frame_graph.place(x=10, y=60)
 
         self.GUI.e_A = tk.Entry(self.GUI.frame_function, width=9, justify='left', font=('Ivy', 11), highlightthickness=1, relief="solid")
-        self.GUI.e_A.place(x=20, y=40)
+        self.GUI.e_A.place(x=20, y=40)  
 
         self.GUI.e_B = tk.Entry(self.GUI.frame_function, width=9, justify='left', font=('Ivy', 11), highlightthickness=1, relief="solid")
         self.GUI.e_B.place(x=110, y=40)
@@ -125,8 +124,11 @@ class HILL_CLIMBING:
         self.GUI.b_reset_graph = tk.Button(self.GUI.frame_function, text="reset", width=10, height=1, bg=co4, font=('Ivy 8 bold'),command=self.reset_graph)
         self.GUI.b_reset_graph.place(x=110, y=110)
 
-        app_name = tk.Label(self.GUI.frame_up, text="HILL CLIMBING", height=1, font=('Verdana 17 bold'), bg=co4 ,fg=co1)
-        app_name.place(x=5, y=5)
+        self.GUI.l_idle = tk.Label(self.GUI.frame_product, text="Chỗ để dữ liệu của đồ thị. \n Ví dụ: độ dài của cạnh nối giữa 2 điểm. \nÝ tưởng là dùng ttk.Treeview. \n Có thể sẽ để kết quả", font=('Ivy', 11), bg=co0,fg=co1)
+        self.GUI.l_idle.place(x=5, y=5)
+
+        app_name = tk.Label(self.GUI.frame_up, text="GTS", height=1, font=('Verdana 17 bold'), bg=co4 ,fg=co1)
+        app_name.place(x=5, y=5) 
     
     def on_closing(self):
         plt.close('all')
@@ -134,5 +136,5 @@ class HILL_CLIMBING:
         self.GUI.destroy()
 if __name__ == "__main__":
     GUI = tk.Tk()
-    obj = HILL_CLIMBING(GUI)
+    obj = GTS(GUI)
     GUI.mainloop()
