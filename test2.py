@@ -1,140 +1,180 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk
+from tkinter import messagebox, scrolledtext
 from PIL import Image, ImageTk
-import random
+import networkx as nx
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import re
 
-class NQueens:
-    def __init__(self, size):
-        self.size = size
-        self.board = [0] * self.size
-        self.initialize_board()
-        self.conflicts = self.calculate_conflicts(self.board)
+# colors
+co0 = "#ffffff"  # trắng
+co1 = "#000000"  # đen
+co2 = "#4456F0"  # xanh
+co4 = "#6495ED"  # xanh dương nhạt
+co5 = "#dda0dd"  # hồng nhạt
 
-    def initialize_board(self):
-        self.board = list(range(self.size)) 
-        random.shuffle(self.board)
-        self.conflicts = self.calculate_conflicts(self.board)
 
-    def calculate_conflicts(self, board):
-            # Tạo các bộ đếm để đếm số quân hậu trên mỗi hàng và các đường chéo
-        row_count = [0] * self.size
-        main_diag = [0] * (2 * self.size - 1)  # Đường chéo chính (row - col)
-        anti_diag = [0] * (2 * self.size - 1)  # Đường chéo phụ (row + col)
-        
-        # Cập nhật các bộ đếm dựa trên vị trí các quân hậu
-        for col in range(self.size):
-            row = board[col]
-            row_count[row] += 1
-            main_diag[row - col + self.size - 1] += 1
-            anti_diag[row + col] += 1
-        
-        # Tính tổng số xung đột
-        conflicts = 0
-        for count in row_count:
-            if count > 1:
-                conflicts += (count * (count - 1)) // 2  # Số xung đột trong hàng
-        for count in main_diag:
-            if count > 1:
-                conflicts += (count * (count - 1)) // 2  # Số xung đột trong đường chéo chính
-        for count in anti_diag:
-            if count > 1:
-                conflicts += (count * (count - 1)) // 2  # Số xung đột trong đường chéo phụ
-        
-        return conflicts
+class GTS:
+    def __init__(self, GUI):
+        self.GUI = GUI
+        self.fig, self.ax = plt.subplots(figsize=(6, 4.43))
+        self.GUI.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.canvas = None
+        self.visual = []
+        self.visual_temp = []
+        self.edge_colors = {}  # Lưu màu của từng cạnh
+        self.contruction()
 
-    def get_neighbors(self):
-        # Tạo ra tất cả các hàng xóm có thể bằng cách di chuyển các quân hậu
-        neighbors = []
-        for col in range(self.size):
-            for row in range(self.size):
-                if self.board[col] != row:
-                    neighbor = list(self.board)
-                    neighbor[col] = row
-                    neighbors.append(neighbor)
-        return neighbors
-
-    def hill_climbing(self):
-        # Thực hiện thuật toán Hill Climbing để giải bài toán N-Queens
-        current_conflicts = self.calculate_conflicts(self.board)
-        while True:
-            neighbors = self.get_neighbors()
-            neighbor_conflicts = [self.calculate_conflicts(neighbor) for neighbor in neighbors]
-            min_conflict = min(neighbor_conflicts)
-            if min_conflict >= current_conflicts:
-                break
-            current_conflicts = min_conflict
-            self.board = neighbors[neighbor_conflicts.index(min_conflict)]
-        return self.board, current_conflicts == 0
-
-class GUI:
-    def __init__(self, master):
-        self.master = master
-        self.master.title("N Queens Problem - Hill Climbing")
-        self.canvas = tk.Canvas(self.master, width=400, height=400)
-        self.canvas.pack()
-
-        self.size_entry = tk.Entry(self.master)
-        self.size_entry.pack()
-        self.size_entry.insert(0, "8")
-
-        display_button = tk.Button(self.master, text="Hiển thị bàn cờ", command=self.display_board)
-        display_button.pack()
-
-        solve_button = tk.Button(self.master, text="Giải bài toán", command=self.solve)
-        solve_button.pack()
-
-        # Tải và chỉnh kích thước ảnh quân hậu
-        self.queen_image = Image.open("queen.png")  # Đảm bảo đường dẫn ảnh đúng
-        self.queen_image = self.queen_image.resize((50, 50))
-        self.queen_photo = ImageTk.PhotoImage(self.queen_image)
-
-        self.queens = None
-        self.conflict_label = tk.Label(self.master, text="Xung đột:")
-        self.conflict_label.pack()
-
-    def draw_board(self):
-        # Vẽ bàn cờ và các quân hậu
-        self.canvas.delete("all")
-        size = self.queens.size
-        cell_size = min(400 // size, 400 // size)
-        for i in range(size):
-            for j in range(size):
-                color = "white" if (i + j) % 2 == 0 else "gray"
-                self.canvas.create_rectangle(i * cell_size, j * cell_size, (i + 1) * cell_size, (j + 1) * cell_size, fill=color)
-                if self.queens.board[j] == i:
-                    self.canvas.create_image(i * cell_size + cell_size // 2, j * cell_size + cell_size // 2, image=self.queen_photo)
-        # Cập nhật hiển thị số xung đột
-        self.conflict_label.config(text=f"Xung đột: {self.queens.conflicts}")
-
-    def display_board(self):
+    def is_number(self, s):
         try:
-            size = int(self.size_entry.get())
-            if size < 4:
-                messagebox.showerror("Error", "Số lượng quân hậu phải từ 4 trở lên.")
-                return
-            self.queens = NQueens(size)
-            self.draw_board()
+            float(s)
+            return True
         except ValueError:
-            messagebox.showerror("Error", "Vui lòng nhập một số hợp lệ.")
+            return False
 
-    def solve(self):
-        if not self.queens:
-            messagebox.showerror("Error", "Vui lòng hiển thị bàn cờ trước.")
+    def graph_data(self):
+        if self.canvas:
             return
-        # Lặp lại quá trình giải cho đến khi tìm được giải pháp
-        while True:
-            solved_board, solved = self.queens.hill_climbing()
-            self.draw_board()
-            if solved:
-                messagebox.showinfo("Kết quả", "Đã tìm thấy giải pháp.")
-                self.queens.conflicts=0
-                self.conflict_label.config(text=f"Xung đột: {self.queens.conflicts}")
-                break
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.GUI.frame_graph)
+        self.canvas.get_tk_widget().pack()
+
+    def addEdge(self, a, b, c):
+        temp = [a, b]
+        temp_1 = [a, b, c]
+        self.visual.append(temp)
+        self.visual_temp.append(temp_1)
+        self.edge_colors[(a, b)] = "gray"
+
+    def draw_graph(self):
+        if not self.canvas:
+            self.graph_data()
+        self.ax.clear()
+        self.G = nx.Graph()
+
+        # Thêm các cạnh với trọng số
+        for edge in self.visual_temp:
+            self.G.add_edge(edge[0], edge[1], weight=edge[2])
+
+        # Vị trí các đỉnh trên đồ thị
+        pos = nx.spring_layout(self.G)
+
+        # Vẽ các đỉnh và cạnh với màu cạnh từ edge_colors
+        nx.draw(
+            self.G,
+            pos,
+            ax=self.ax,
+            with_labels=True,
+            node_color="skyblue",
+            node_size=700,
+            font_size=15,
+            font_color="black",
+            edge_color=[self.edge_colors[(a, b)] if (a, b) in self.edge_colors else "gray" for a, b in self.G.edges()],
+        )
+
+        # Lấy trọng số (khoảng cách) từ các cạnh và hiển thị trên đồ thị
+        edge_labels = nx.get_edge_attributes(self.G, 'weight')
+        nx.draw_networkx_edge_labels(self.G, pos, edge_labels=edge_labels)
+
+        self.canvas.draw()
+
+    def add_graph(self):
+        a = self.GUI.e_A.get()
+        b = self.GUI.e_B.get()
+        c = self.GUI.e_C.get()
+        check_c = self.is_number(c)
+        check = 0
+        if a == '' or b == '' or c == '' or not check_c:
+            messagebox.showinfo("Fail", "Dữ liệu sai")
+            return
+        for i in range(len(self.visual)):
+            if (self.visual[i][0] == a and self.visual[i][1] == b) or (self.visual[i][0] == b and self.visual[i][1] == a):
+                check = 1
+        if check == 0:
+            self.addEdge(a, b, float(c))  # Chuyển c thành float để hiển thị đúng
+            self.draw_graph()
+        else:
+            messagebox.showinfo("Fail", "Trùng cạnh đã nhập")
+
+    def reset_graph(self):
+        self.visual = []
+        self.visual_temp = []
+        self.edge_colors = {} 
+        self.draw_graph()
+
+    def change_edge_color(self):
+        edge_input = self.GUI.e_edge_color.get()
+        color_input = self.GUI.e_color.get()
+        try:
+            a, b = edge_input.split(",")  # Giả sử người dùng nhập "A,B"
+            a, b = a.strip(), b.strip()
+            if (a, b) in self.edge_colors or (b, a) in self.edge_colors:
+                self.edge_colors[(a, b)] = color_input
+                self.edge_colors[(b, a)] = color_input
+                self.draw_graph()
             else:
-                # Nếu không tìm được, khởi tạo lại bàn cờ ngẫu nhiên và thử lại
-                self.queens.initialize_board()
+                messagebox.showinfo("Fail", "Cạnh không tồn tại")
+        except:
+            messagebox.showinfo("Fail", "Dữ liệu sai. Nhập cạnh dưới dạng 'A,B'.")
+
+    def contruction(self):
+        self.GUI.title("GTS")
+        self.GUI.geometry('960x520+300+150')
+        self.GUI.configure(background=co0)
+        self.GUI.resizable(width=tk.FALSE, height=tk.FALSE)
+
+        self.GUI.frame_up = tk.Frame(self.GUI, width=960, height=50, bg=co4)
+        self.GUI.frame_up.grid(row=0, column=0, padx=0, pady=0)
+
+        self.GUI.frame_function = tk.Frame(self.GUI, width=300, height=200, bg=co0, highlightbackground=co1, highlightthickness=2)
+        self.GUI.frame_function.place(x=650, y=60)
+
+        self.GUI.frame_product = tk.Frame(self.GUI, width=300, height=237, bg=co0, highlightbackground=co1, highlightthickness=2)
+        self.GUI.frame_product.place(x=650, y=270)
+
+        self.GUI.frame_graph = tk.Frame(self.GUI, width=604, height=447, bg=co0, highlightbackground=co1, highlightthickness=2, relief="flat")
+        self.GUI.frame_graph.place(x=10, y=60)
+
+        self.GUI.e_A = tk.Entry(self.GUI.frame_function, width=9, justify='left', font=('Ivy', 11), highlightthickness=1, relief="solid")
+        self.GUI.e_A.place(x=20, y=40)
+
+        self.GUI.e_B = tk.Entry(self.GUI.frame_function, width=9, justify='left', font=('Ivy', 11), highlightthickness=1, relief="solid")
+        self.GUI.e_B.place(x=110, y=40)
+
+        self.GUI.e_C = tk.Entry(self.GUI.frame_function, width=9, justify='left', font=('Ivy', 11), highlightthickness=1, relief="solid")
+        self.GUI.e_C.place(x=200, y=40)
+
+        self.GUI.b_draw_graph = tk.Button(self.GUI.frame_function, text="Draw Graph", width=10, height=1, bg=co4, font=('Ivy 8 bold'), command=self.add_graph)
+        self.GUI.b_draw_graph.place(x=30, y=110)
+
+        self.GUI.b_reset_graph = tk.Button(self.GUI.frame_function, text="Reset", width=10, height=1, bg=co4, font=('Ivy 8 bold'), command=self.reset_graph)
+        self.GUI.b_reset_graph.place(x=110, y=110)
+
+        # Thêm các mục nhập và nút cho chức năng đổi màu cạnh
+        self.GUI.e_edge_color = tk.Entry(self.GUI.frame_function, width=15, justify='left', font=('Ivy', 11), highlightthickness=1, relief="solid")
+        self.GUI.e_edge_color.place(x=20, y=160)
+        self.GUI.e_edge_color.insert(0, "A,B")  # Hướng dẫn người dùng nhập đúng định dạng
+
+        self.GUI.e_color = tk.Entry(self.GUI.frame_function, width=9, justify='left', font=('Ivy', 11), highlightthickness=1, relief="solid")
+        self.GUI.e_color.place(x=180, y=160)
+        self.GUI.e_color.insert(0, "red")  # Màu mặc định
+
+        self.GUI.b_change_color = tk.Button(self.GUI.frame_function, text="Change Color", width=10, height=1, bg=co4, font=('Ivy 8 bold'), command=self.change_edge_color)
+        self.GUI.b_change_color.place(x=110, y=190)
+
+        self.GUI.l_idle = tk.Label(self.GUI.frame_product, text="Chỗ để dữ liệu của đồ thị. \n Ví dụ: độ dài của cạnh nối giữa 2 điểm. \nÝ tưởng là dùng ttk.Treeview. \n Có thể sẽ để kết quả", font=('Ivy', 11), bg=co0, fg=co1)
+        self.GUI.l_idle.place(x=5, y=5)
+
+        app_name = tk.Label(self.GUI.frame_up, text="GTS", height=1, font=('Verdana 17 bold'), bg=co4, fg=co1)
+        app_name.place(x=5, y=5)
+
+    def on_closing(self):
+        plt.close('all')
+        self.GUI.quit()
+        self.GUI.destroy()
+
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = GUI(root)
-    root.mainloop()
+    GUI = tk.Tk()
+    obj = GTS(GUI)
+    GUI.mainloop()
