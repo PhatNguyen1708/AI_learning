@@ -187,13 +187,19 @@ class GTS:
             flag = min_vertices
             unvisited.remove(min_vertices)
         
+        min_vertices = None
         for data in self.visual:
             if (data[0] == flag and data[1] == start) or (data[1] == flag and data[0] == start):
                 slove += float(data[2])
+                min_vertices = float(data[2])
                 last_data =[data[0],data[1]]
                 self.visual_temp.append(last_data)
                 break
 
+        if min_vertices is None:
+                self.visual_temp=[]
+                messagebox.showinfo("Fail", "Đồ thị không liên thông")
+                return
         self.draw_GTS()
         self.GUI.e_solve.configure(state="normal")
         self.GUI.e_solve.delete(0, 'end')
