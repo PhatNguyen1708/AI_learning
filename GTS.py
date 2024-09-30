@@ -46,6 +46,9 @@ class GTS:
         self.edge_colors[(a, b)] = "gray" 
 
     def draw_graph(self):
+        if self.visual == []:
+                messagebox.showinfo("Fail", "Chưa nhập đồ thị")
+                return
 
         if not self.canvas:
             self.graph_data()
@@ -99,7 +102,9 @@ class GTS:
         self.visual = []
         self.visual_temp = []
         self.edge_colors = {}
-        self.draw_graph()
+        if self.canvas:
+            self.canvas.get_tk_widget().destroy()
+            self.canvas = None
         self.show()
 
     def show(self):
@@ -138,9 +143,10 @@ class GTS:
                 
         self.draw_graph()
 
-    def GTS(self):
+    def GTS(self):  
         start = self.GUI.e_start.get()
         start = start.upper()
+        way =f"{start} -->"
         check_data=0
         if start == "":
             messagebox.showinfo("Fail", "Chưa nhập đỉnh bắt đầu")
@@ -185,6 +191,7 @@ class GTS:
             self.visual_temp.append(data)
             slove += min_distance
             flag = min_vertices
+            way += f"{min_vertices} -->"
             unvisited.remove(min_vertices)
         
         min_vertices = None
@@ -192,6 +199,7 @@ class GTS:
             if (data[0] == flag and data[1] == start) or (data[1] == flag and data[0] == start):
                 slove += float(data[2])
                 min_vertices = float(data[2])
+                way += f"{start}"
                 last_data =[data[0],data[1]]
                 self.visual_temp.append(last_data)
                 break
@@ -200,11 +208,18 @@ class GTS:
                 self.visual_temp=[]
                 messagebox.showinfo("Fail", "Đồ thị không liên thông")
                 return
+        
         self.draw_GTS()
+
         self.GUI.e_solve.configure(state="normal")
         self.GUI.e_solve.delete(0, 'end')
         self.GUI.e_solve.insert(0,slove)
         self.GUI.e_solve.configure(state="disabled")
+        
+        self.GUI.e_way.configure(state="normal")
+        self.GUI.e_way.delete(0, 'end')
+        self.GUI.e_way.insert(0,way)
+        self.GUI.e_way.configure(state="disabled")
 
     def save_file(self):
         if self.visual == []:
@@ -311,6 +326,18 @@ class GTS:
         self.GUI.e_solve = tk.Entry(self.GUI.frame_product, width=9, justify='left', font=('Ivy', 11), highlightthickness=1, relief="solid")
         self.GUI.e_solve.place(x=70, y=200)
         self.GUI.e_solve.configure(state="disabled")
+
+        self.GUI.l_way = tk.Label(self.GUI.frame_product,text="WAY:" ,font=('Ivy', 11), bg=co0,fg=co1)
+        self.GUI.l_way.place(x=10, y=230)
+
+        scrollx = ttk.Scrollbar(self.GUI.frame_product, orient="horizontal")
+        scrollx.place(x=70, y=250,width=160)
+
+
+        self.GUI.e_way = tk.Entry(self.GUI.frame_product, width=25, justify='left' ,highlightthickness=1,xscrollcommand=scrollx.set, relief="solid")
+        self.GUI.e_way.place(x=70, y=230)
+        self.GUI.e_way.configure(state="disabled")
+        scrollx.config(command=self.GUI.e_way.xview)
 
         app_name = tk.Label(self.GUI.frame_up, text="GTS", height=1, font=('Verdana 17 bold'), bg=co4 ,fg=co1)
         app_name.place(x=5, y=5) 
