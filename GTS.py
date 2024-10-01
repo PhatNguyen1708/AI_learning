@@ -143,11 +143,10 @@ class GTS:
                 
         self.draw_graph()
 
-    def GTS(self):  
-        start = self.GUI.e_start.get()
-        start = start.upper()
+    def GTS(self,start,slove,way,visual_temp):
         way =f"{start} -->"
         check_data=0
+        temp =[]
         if start == "":
             messagebox.showinfo("Fail", "Chưa nhập đỉnh bắt đầu")
             return
@@ -188,7 +187,7 @@ class GTS:
                 return
             
             data =[flag,min_vertices]
-            self.visual_temp.append(data)
+            temp.append(data)
             slove += min_distance
             flag = min_vertices
             way += f"{min_vertices} -->"
@@ -201,14 +200,23 @@ class GTS:
                 min_vertices = float(data[2])
                 way += f"{start}"
                 last_data =[data[0],data[1]]
-                self.visual_temp.append(last_data)
+                temp.append(last_data)
                 break
 
         if min_vertices is None:
-                self.visual_temp=[]
                 messagebox.showinfo("Fail", "Đồ thị không liên thông")
                 return
-        
+        return slove,way,temp
+
+
+    def GTS_1(self):
+        slove = 0
+        way = ""
+        start = self.GUI.e_start.get()
+        start = start.upper()
+        visual_temp = []
+        slove,way,temp=self.GTS(start,slove,way,visual_temp)
+        self.visual_temp = temp
         self.draw_GTS()
 
         self.GUI.e_solve.configure(state="normal")
@@ -219,6 +227,42 @@ class GTS:
         self.GUI.e_way.configure(state="normal")
         self.GUI.e_way.delete(0, 'end')
         self.GUI.e_way.insert(0,way)
+        self.GUI.e_way.configure(state="disabled")
+
+    def GTS_2(self):
+        vertices = set()
+        for edge in self.visual:
+            vertices.add(edge[0])
+            vertices.add(edge[1])
+        print(vertices)
+        min_slove = float('inf')
+        min_way = ""
+        min_visual_temp = []
+
+        for vertice in vertices:
+            slove = 0
+            way = ""
+            visual_temp = []
+            slove,way,visual_temp=self.GTS(vertice,slove,way,visual_temp)
+            if min_slove > slove:
+                min_slove = slove
+                min_way = way
+                min_visual_temp = visual_temp
+            print(f"đỉnh{vertice}:")
+            print(slove)
+            print(way)
+
+        self.visual_temp = visual_temp
+        self.draw_GTS()
+
+        self.GUI.e_solve.configure(state="normal")
+        self.GUI.e_solve.delete(0, 'end')
+        self.GUI.e_solve.insert(0,min_slove)
+        self.GUI.e_solve.configure(state="disabled")
+        
+        self.GUI.e_way.configure(state="normal")
+        self.GUI.e_way.delete(0, 'end')
+        self.GUI.e_way.insert(0,min_way)
         self.GUI.e_way.configure(state="disabled")
 
     def save_file(self):
@@ -317,8 +361,11 @@ class GTS:
         self.GUI.e_start = tk.Entry(self.GUI.frame_product, width=9, justify='left', font=('Ivy', 11), highlightthickness=1, relief="solid")
         self.GUI.e_start.place(x=10, y=170)
 
-        self.GUI.b_GTS = tk.Button(self.GUI.frame_product, text="GTS", width=10, height=1, bg=co4, font=('Ivy 8 bold'),command=self.GTS)
+        self.GUI.b_GTS = tk.Button(self.GUI.frame_product, text="GTS_1", width=10, height=1, bg=co4, font=('Ivy 8 bold'),command=self.GTS_1)
         self.GUI.b_GTS.place(x=100, y=170)
+
+        self.GUI.b_GTS = tk.Button(self.GUI.frame_product, text="GTS_2", width=10, height=1, bg=co4, font=('Ivy 8 bold'),command=self.GTS_2)
+        self.GUI.b_GTS.place(x=200, y=170)
 
         self.GUI.l_solve = tk.Label(self.GUI.frame_product,text="SLOVE:", font=('Ivy', 11), bg=co0,fg=co1)
         self.GUI.l_solve.place(x=10, y=200)
