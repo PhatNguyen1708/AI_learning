@@ -208,15 +208,23 @@ class GTS:
                 return
         return slove,way,temp
 
+    def reset_GTS(self):
+        color_input = "gray"
+        for data in self.visual_temp:   
+            if (data[0], data[1]) in self.edge_colors or (data[1], data[0])  in self.edge_colors:
+                self.edge_colors[(data[0], data[1])] = color_input
+                self.edge_colors[(data[1], data[0])] = color_input
+        self.visual_temp =[]
 
     def GTS_1(self):
+        self.reset_GTS()
         slove = 0
         way = ""
         start = self.GUI.e_start.get()
         start = start.upper()
         visual_temp = []
-        slove,way,temp=self.GTS(start,slove,way,visual_temp)
-        self.visual_temp = temp
+        slove,way,visual_temp=self.GTS(start,slove,way,visual_temp)
+        self.visual_temp = visual_temp
         self.draw_GTS()
         
         self.GUI.e_solve.configure(state="normal")
@@ -230,6 +238,7 @@ class GTS:
         self.GUI.e_way.configure(state="disabled")
 
     def GTS_2(self):
+        self.reset_GTS()
         vertices = set()
         for edge in self.visual:
             vertices.add(edge[0])
@@ -252,7 +261,7 @@ class GTS:
             print(slove)
             print(way)
 
-        self.visual_temp = visual_temp
+        self.visual_temp = min_visual_temp
         self.draw_GTS()
 
         self.GUI.e_solve.configure(state="normal")
