@@ -350,5 +350,3 @@ if __name__ == "__main__":
     GUI = tk.Tk()
     obj = GTS(GUI)
     GUI.mainloop()
-
-    print("hello")
