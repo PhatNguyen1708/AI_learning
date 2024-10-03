@@ -218,7 +218,7 @@ class GTS:
         slove,way,temp=self.GTS(start,slove,way,visual_temp)
         self.visual_temp = temp
         self.draw_GTS()
-
+        
         self.GUI.e_solve.configure(state="normal")
         self.GUI.e_solve.delete(0, 'end')
         self.GUI.e_solve.insert(0,slove)
